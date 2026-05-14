@@ -212,10 +212,11 @@ public sealed class ChannelsController(
             return false;
         }
     }
-
     private string BuildProxyUrl(string originalUrl)
     {
-        return $"{Request.Scheme}://{Request.Host}/api/proxy/stream?url={Uri.EscapeDataString(originalUrl)}";
+        originalUrl = ResolveOriginalStreamUrl(originalUrl);
+        // Reemplazamos Request.Scheme por "https" quemado en el código
+        return $"https://{Request.Host}/api/proxy/stream?url={Uri.EscapeDataString(originalUrl)}";
     }
 
     private static void AddBrowserHeaders(HttpRequestMessage request, string targetUrl)

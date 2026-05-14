@@ -169,7 +169,8 @@ public sealed partial class ProxyController(
     private string BuildProxyUrl(string originalUrl)
     {
         originalUrl = ResolveOriginalStreamUrl(originalUrl);
-        return $"{Request.Scheme}://{Request.Host}/api/proxy/stream?url={Uri.EscapeDataString(originalUrl)}";
+        // Reemplazamos Request.Scheme por "https" quemado en el código
+        return $"https://{Request.Host}/api/proxy/stream?url={Uri.EscapeDataString(originalUrl)}";
     }
 
     private static string BuildAbsoluteUrl(Uri baseUri, string value)
