@@ -18,6 +18,7 @@ import { IonButton, IonIcon, IonSpinner, ToastController } from '@ionic/angular/
 import { finalize } from 'rxjs';
 import videojs from 'video.js';
 import Player from 'video.js/dist/types/player';
+import { environment } from '../../../environments/environment';
 import { ChannelRepairResponse } from '../../core/models/channel.model';
 import { ApiService } from '../../core/services/api.service';
 import { SettingsService } from '../../core/services/settings.service';
@@ -81,6 +82,7 @@ export class PlayerComponent implements AfterViewInit, OnChanges, OnDestroy {
   private lastEmittedStatus: PlayerPlaybackStatus | null = null;
   private wasPlayingBeforeHidden = false;
   private readonly trackRefreshTimers: ReturnType<typeof setTimeout>[] = [];
+  private readonly proxyStreamEndpoint = `${environment.apiUrl.replace(/\/+$/, '')}/proxy/stream`;
 
   @HostBinding('class.inline-player')
   get inlinePlayer(): boolean {
@@ -112,6 +114,8 @@ export class PlayerComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   ngAfterViewInit(): void {
+    const initialStreamUrl = this.resolvePlayableStreamUrl(this.streamUrl);
+
     this.player = videojs(this.videoTarget.nativeElement, {
       autoplay: true,
       controls: true,
@@ -142,7 +146,7 @@ export class PlayerComponent implements AfterViewInit, OnChanges, OnDestroy {
       },
       sources: [
         {
-          src: this.streamUrl,
+          src: initialStreamUrl,
           type: 'application/x-mpegURL'
         }
       ]
@@ -289,7 +293,9 @@ export class PlayerComponent implements AfterViewInit, OnChanges, OnDestroy {
     }
 
     const currentSource = this.player.currentSource() as { src?: string; type?: string } | null;
-    const currentSrc = this.player.currentSrc() || currentSource?.src || this.streamUrl;
+    const currentSrc = this.resolvePlayableStreamUrl(
+      currentSource?.src || this.player.currentSrc() || this.streamUrl
+    );
 
     if (!currentSrc) {
       return;
@@ -443,6 +449,8 @@ export class PlayerComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   private applyStreamUrl(streamUrl: string): void {
     this.streamUrl = streamUrl;
+    const playableStreamUrl = this.resolvePlayableStreamUrl(streamUrl);
+
     this.buffering = true;
     this.loadingTimedOut = false;
     this.playbackError = false;
@@ -456,7 +464,7 @@ export class PlayerComponent implements AfterViewInit, OnChanges, OnDestroy {
     }
 
     this.player.src({
-      src: streamUrl,
+      src: playableStreamUrl,
       type: 'application/x-mpegURL'
     });
     this.player.load();
@@ -465,6 +473,24 @@ export class PlayerComponent implements AfterViewInit, OnChanges, OnDestroy {
 
     if (playAttempt && typeof playAttempt.catch === 'function') {
       void playAttempt.catch(() => undefined);
+    }
+  }
+
+  private resolvePlayableStreamUrl(streamUrl: string): string {
+    const normalizedStreamUrl = streamUrl.trim();
+
+    if (!normalizedStreamUrl || this.isSecureHttpUrl(normalizedStreamUrl)) {
+      return normalizedStreamUrl;
+    }
+
+    return `${this.proxyStreamEndpoint}?url=${encodeURIComponent(normalizedStreamUrl)}`;
+  }
+
+  private isSecureHttpUrl(streamUrl: string): boolean {
+    try {
+      return new URL(streamUrl).protocol === 'https:';
+    } catch {
+      return false;
     }
   }
 
