@@ -1,0 +1,186 @@
+<ion-content class="home-shell" fullscreen>
+  <ion-refresher slot="fixed" (ionRefresh)="refresh($event)">
+    <ion-refresher-content />
+  </ion-refresher>
+
+  <div class="layout">
+    <aside class="side-nav" aria-label="Categorias">
+      <div class="brand">
+        <span class="brand-mark">
+          <ion-icon name="tv-outline" aria-hidden="true" />
+        </span>
+        <div>
+          <strong>OpenStream</strong>
+          <span>Live TV</span>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        class="category-button"
+        [class.active]="selectedCategory === null"
+        (click)="selectCategory(null)">
+        Todos
+      </button>
+
+      <button
+        type="button"
+        class="category-button"
+        *ngFor="let category of categories; trackBy: trackByCategoryId"
+        [class.active]="selectedCategory === category.name"
+        (click)="selectCategory(category.name)">
+        {{ category.name }}
+      </button>
+    </aside>
+
+    <main class="content">
+      <ion-header class="page-header">
+        <ion-toolbar>
+          <div class="toolbar-content">
+            <div class="headline">
+              <p class="eyebrow">{{ selectedCategory || 'TV en vivo' }}</p>
+              <h1>Canales gratuitos</h1>
+              <div class="channel-stats" aria-live="polite">
+                <span>{{ channels.length }} cargados</span>
+                <span>{{ totalCount }} disponibles</span>
+                <span *ngIf="searchTerm">Busqueda activa</span>
+              </div>
+            </div>
+
+            <div class="actions">
+              <label class="search">
+                <ion-icon name="search-outline" aria-hidden="true" />
+                <input
+                  type="search"
+                  [(ngModel)]="searchTerm"
+                  (ngModelChange)="onSearchTermChange($event)"
+                  autocomplete="off"
+                  placeholder="Buscar canal">
+                <button
+                  type="button"
+                  class="search-clear"
+                  *ngIf="searchTerm"
+                  aria-label="Limpiar busqueda"
+                  (click)="clearSearch(); $event.stopPropagation()">
+                  <ion-icon name="close-outline" aria-hidden="true" />
+                </button>
+              </label>
+
+              <ion-button fill="outline" class="tv-mode-button" (click)="goToTv()">
+                <ion-icon slot="start" name="tv-outline" />
+                Modo TV
+              </ion-button>
+
+              <ion-button fill="clear" class="icon-button" aria-label="Abrir configuracion" (click)="goToSettings()">
+                <ion-icon slot="icon-only" name="settings-outline" />
+              </ion-button>
+
+              <ion-button fill="clear" class="icon-button" aria-label="Actualizar canales" (click)="refresh()">
+                <ion-icon slot="icon-only" name="refresh-outline" />
+              </ion-button>
+            </div>
+          </div>
+        </ion-toolbar>
+      </ion-header>
+
+      <section
+        class="channel-grid skeleton-grid"
+        *ngIf="loading && channels.length === 0"
+        aria-label="Cargando canales">
+        <article class="channel-card skeleton-card" *ngFor="let skeleton of skeletonCards">
+          <div class="skeleton-logo"></div>
+          <div class="skeleton-meta">
+            <span></span>
+            <small></small>
+          </div>
+        </article>
+      </section>
+
+      <section class="error" *ngIf="errorMessage">
+        <strong>No pudimos cargar la parrilla</strong>
+        <span>{{ errorMessage }}</span>
+        <ion-button fill="outline" size="small" (click)="refresh()">
+          Reintentar
+        </ion-button>
+      </section>
+
+      <ng-container *ngIf="channels | searchChannels: searchTerm as filteredChannels">
+        <section class="channel-grid" *ngIf="!errorMessage && filteredChannels.length > 0" aria-label="Lista de canales">
+          <article
+            class="channel-card"
+            *ngFor="let channel of filteredChannels; trackBy: trackByChannelId"
+            (click)="openPlayer(channel)">
+            <div class="card-badges">
+              <span
+                class="health-dot"
+                [attr.data-state]="getHealthState(channel)"
+                [title]="getHealthLabel(channel)"
+                [attr.aria-label]="getHealthLabel(channel)"
+                role="status"></span>
+              <span class="quality-badge">{{ getChannelBadge(channel) }}</span>
+            </div>
+
+            <ion-button
+              fill="clear"
+              class="tv-pin-button"
+              [class.pinned]="channel.showInTvMode"
+              [disabled]="isTvModeBusy(channel.id)"
+              [attr.aria-label]="channel.showInTvMode ? 'Quitar de Modo TV' : 'Fijar en Modo TV'"
+              (click)="toggleTvMode(channel, $event)">
+              <ion-icon slot="icon-only" [name]="channel.showInTvMode ? 'star' : 'star-outline'" />
+            </ion-button>
+
+            <div class="logo-frame">
+              <img
+                *ngIf="channel.logoUrl && !hasLogoFailed(channel); else logoPlaceholder"
+                [appLazyLogo]="channel.logoUrl"
+                [alt]="channel.name"
+                (error)="markLogoFailed(channel)">
+              <ng-template #logoPlaceholder>
+                <span class="logo-placeholder" aria-hidden="true">{{ getInitials(channel.name) }}</span>
+              </ng-template>
+            </div>
+
+            <div class="channel-meta">
+              <h2>{{ channel.name }}</h2>
+              <span>{{ channel.categoryName || 'General' }}</span>
+            </div>
+
+            <ion-button fill="clear" class="play-button" [attr.aria-label]="'Reproducir ' + channel.name">
+              <ion-icon slot="icon-only" name="play-outline" />
+            </ion-button>
+          </article>
+        </section>
+
+        <section class="empty-state" *ngIf="!loading && !errorMessage && filteredChannels.length === 0">
+          <strong>No hay canales para mostrar</strong>
+          <span>Prueba otra categoria o limpia la busqueda.</span>
+        </section>
+      </ng-container>
+
+      <ion-infinite-scroll
+        threshold="360px"
+        [disabled]="!hasMore || loading"
+        (ionInfinite)="loadMore($event)">
+        <ion-infinite-scroll-content loadingSpinner="crescent" />
+      </ion-infinite-scroll>
+    </main>
+  </div>
+
+  <app-ad-banner class="web-ad" [compact]="true" />
+</ion-content>
+
+<div
+  class="player-backdrop"
+  *ngIf="selectedChannel as channel"
+  [class.pip-active]="playerInPip">
+  <app-player
+    [channelId]="channel.id"
+    [title]="channel.name"
+    [streamUrl]="channel.streamUrl"
+    (pipModeChanged)="handlePipModeChanged($event)"
+    (playbackStatus)="handlePlaybackStatus($event)"
+    (playbackReport)="handlePlaybackReport($event)"
+    (playbackRepaired)="handlePlaybackRepaired($event)"
+    (closed)="closePlayer()" />
+</div>

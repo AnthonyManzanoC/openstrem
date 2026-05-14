@@ -1,0 +1,195 @@
+<ion-content class="tv-shell" fullscreen [scrollY]="false">
+  <main
+    class="tv-layout"
+    [class.menu-open]="isMenuVisible && !isLocked"
+    [class.locked]="isLocked"
+    [class.pip-active]="isPipActive"
+    [class.pip-active-tv]="isPipActive">
+    <button
+      *ngIf="!isLocked"
+      type="button"
+      class="menu-toggle"
+      [attr.aria-label]="isMenuVisible ? 'Ocultar menu de canales' : 'Mostrar menu de canales'"
+      [attr.aria-expanded]="isMenuVisible"
+      (click)="toggleMenu()">
+      <ion-icon [name]="isMenuVisible ? 'close-outline' : 'menu-outline'" aria-hidden="true" />
+    </button>
+
+    <button
+      type="button"
+      class="menu-scrim"
+      *ngIf="isMenuVisible && !isLocked"
+      aria-label="Cerrar menu de canales"
+      (click)="toggleMenu()">
+    </button>
+
+    <aside
+      class="channel-panel"
+      *ngIf="!isLocked"
+      [class.visible]="isMenuVisible"
+      aria-label="Canales fijados">
+      <header class="panel-header">
+        <div>
+          <p>Favoritos</p>
+          <strong>Modo TV</strong>
+        </div>
+
+        <div class="panel-actions">
+          <button type="button" class="back-button" aria-label="Abrir configuracion" (click)="goToSettings()">
+            <ion-icon name="settings-outline" aria-hidden="true" />
+          </button>
+
+          <button type="button" class="back-button" aria-label="Volver a la grilla" (click)="goToHome()">
+            <ion-icon name="home-outline" aria-hidden="true" />
+          </button>
+        </div>
+      </header>
+
+      <section class="loading-list" *ngIf="loading">
+        <ion-spinner name="crescent" />
+        <span>Cargando canales</span>
+      </section>
+
+      <section class="empty-list" *ngIf="!loading && !errorMessage && favoriteChannels.length === 0">
+        <strong>Sin canales fijados</strong>
+        <span>Marca canales con la estrella desde la grilla.</span>
+        <button type="button" class="empty-link" (click)="goToHome()">
+          <ion-icon name="star-outline" aria-hidden="true" />
+          Elegir canales
+        </button>
+      </section>
+
+      <section class="empty-list error" *ngIf="!loading && errorMessage">
+        <strong>No pudimos abrir Modo TV</strong>
+        <span>{{ errorMessage }}</span>
+      </section>
+
+      <nav class="channel-list" *ngIf="!loading && favoriteChannels.length > 0">
+        <button
+          type="button"
+          class="channel-row"
+          *ngFor="let channel of favoriteChannels; let i = index; trackBy: trackByChannelId"
+          [class.active]="selectedChannel?.id === channel.id"
+          (click)="selectChannel(channel, true)">
+          <span class="channel-logo">
+            <img
+              *ngIf="channel.logoUrl && !hasLogoFailed(channel); else logoPlaceholder"
+              [appLazyLogo]="channel.logoUrl"
+              [alt]="channel.name"
+              (error)="markLogoFailed(channel)">
+            <ng-template #logoPlaceholder>
+              <span class="logo-placeholder" aria-hidden="true">{{ getInitials(channel.name) }}</span>
+            </ng-template>
+          </span>
+          <span class="channel-copy">
+            <span class="channel-number">{{ i + 1 }}.</span>
+            <span class="channel-name">{{ channel.name }}</span>
+          </span>
+        </button>
+      </nav>
+    </aside>
+
+    <section class="screen-panel" aria-label="Reproductor Modo TV">
+      <div class="player-frame" *ngIf="selectedChannel as channel; else noSignal">
+        <app-player
+          [presentation]="'inline'"
+          [channelId]="channel.id"
+          [title]="channel.name"
+          [streamUrl]="channel.streamUrl"
+          (pipModeChanged)="handlePipModeChanged($event)"
+          (playbackStatus)="handlePlaybackStatus($event)"
+          (playbackReport)="handlePlaybackReport()"
+          (playbackRepaired)="handlePlaybackRepaired($event)" />
+      </div>
+
+      <ng-template #noSignal>
+        <section class="no-signal">
+          <ion-icon name="tv-outline" aria-hidden="true" />
+          <strong>Modo TV listo</strong>
+          <span>Fija uno o mas canales para empezar.</span>
+        </section>
+      </ng-template>
+
+    </section>
+
+    <div class="tv-side-controls" *ngIf="selectedChannel && !isLocked">
+      <button
+        type="button"
+        class="round-button menu-button"
+        [attr.aria-label]="isMenuVisible ? 'Cerrar menu de canales' : 'Abrir menu de canales'"
+        [title]="isMenuVisible ? 'Cerrar menu' : 'Abrir menu'"
+        (click)="toggleMenu()">
+        <ion-icon [name]="isMenuVisible ? 'close-outline' : 'menu-outline'" aria-hidden="true" />
+      </button>
+
+      <button type="button" class="round-button channel-button" aria-label="Canal siguiente" (click)="nextChannel()">
+        <ion-icon name="chevron-up-outline" aria-hidden="true" />
+        <small>CH+</small>
+      </button>
+
+      <button type="button" class="round-button volume-button" aria-label="Subir volumen" (click)="changeVolume(0.1)">
+        <ion-icon name="add-outline" aria-hidden="true" />
+      </button>
+
+      <span class="volume-readout" aria-live="polite">
+        <ion-icon name="volume-high-outline" aria-hidden="true" />
+        {{ volumeLevel }}%
+      </span>
+
+      <button type="button" class="round-button volume-button" aria-label="Bajar volumen" (click)="changeVolume(-0.1)">
+        <ion-icon name="remove-outline" aria-hidden="true" />
+      </button>
+
+      <button type="button" class="round-button channel-button" aria-label="Canal anterior" (click)="previousChannel()">
+        <small>CH-</small>
+        <ion-icon name="chevron-down-outline" aria-hidden="true" />
+      </button>
+
+      <button type="button" class="round-button lock-button" aria-label="Activar modo cine" title="Modo cine" (click)="toggleLock()">
+        <ion-icon name="lock-closed-outline" aria-hidden="true" />
+      </button>
+    </div>
+
+    <ng-container *ngIf="selectedChannel as channel">
+    <footer class="tv-bottom-osd" *ngIf="!isLocked">
+      <div class="control-strip">
+        <button type="button" class="report-button" (click)="reportSelectedChannel()">
+          <ion-icon name="alert-circle-outline" aria-hidden="true" />
+          REPORTAR
+        </button>
+
+        <span class="now-playing">
+          <strong>{{ channel.name }}</strong>
+          <small [attr.data-state]="signalState">{{ signalState }}</small>
+        </span>
+
+        <button type="button" class="osd-icon" aria-label="Activar modo cine" title="Modo cine" (click)="toggleLock()">
+          <ion-icon name="lock-closed-outline" aria-hidden="true" />
+        </button>
+        <button type="button" class="osd-icon" aria-label="Copiar enlace del canal" title="Compartir" (click)="shareSelectedChannel()">
+          <ion-icon name="link-outline" aria-hidden="true" />
+        </button>
+        <button type="button" class="osd-icon" aria-label="Recargar stream" title="Recargar stream" (click)="reloadSelectedStream()">
+          <ion-icon name="ellipsis-vertical" aria-hidden="true" />
+        </button>
+      </div>
+
+      <app-ad-banner class="tv-ad" [compact]="true" />
+    </footer>
+
+    <button
+      type="button"
+      class="cinema-unlock"
+      *ngIf="isLocked"
+      aria-label="Desbloquear controles"
+      title="Desbloquear controles"
+      (click)="toggleLock()">
+      <ion-icon name="lock-closed-outline" aria-hidden="true" />
+    </button>
+    </ng-container>
+
+    <div class="tv-toast" *ngIf="toastMessage" role="status" aria-live="polite">
+      {{ toastMessage }}
+    </div>
+  </main>
+</ion-content>

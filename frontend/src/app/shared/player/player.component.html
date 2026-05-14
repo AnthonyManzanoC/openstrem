@@ -1,0 +1,94 @@
+<section
+  class="player-overlay"
+  [class.inline]="presentation === 'inline'"
+  role="dialog"
+  [attr.aria-modal]="presentation === 'overlay' ? 'true' : null"
+  [attr.aria-label]="title">
+  <header class="player-header">
+    <strong>{{ title }}</strong>
+    <div class="player-actions">
+      <ion-button
+        fill="clear"
+        class="tool-button"
+        aria-label="Configurar audio y subtitulos"
+        (click)="toggleSettings()">
+        <ion-icon slot="icon-only" name="settings-outline" />
+      </ion-button>
+
+      <ion-button fill="clear" class="close-button" aria-label="Cerrar reproductor" (click)="close()">
+        <ion-icon slot="icon-only" name="close-outline" />
+      </ion-button>
+    </div>
+  </header>
+
+  <div class="player-stage">
+    <ion-button
+      fill="clear"
+      class="manual-report-button"
+      [disabled]="repairing || reportSent"
+      aria-label="Enviar canal a clinica"
+      title="Enviar canal a clinica"
+      (click)="reportManualIssue()">
+      <ion-spinner *ngIf="repairing" slot="icon-only" name="crescent" />
+      <ion-icon *ngIf="!repairing" slot="icon-only" name="flag-outline" />
+    </ion-button>
+
+    <video
+      #videoTarget
+      class="video-js vjs-default-skin vjs-big-play-centered"
+      playsinline
+      controls>
+    </video>
+
+    <div class="loading-panel" *ngIf="buffering && !playbackError && !loadingTimedOut">
+      <span class="loader-ring" aria-hidden="true"></span>
+      <strong>Conectando senal en vivo</strong>
+    </div>
+
+    <section class="player-message" *ngIf="playbackError || loadingTimedOut">
+      <ion-icon name="warning-outline" aria-hidden="true" />
+      <strong>Este canal requiere un Proxy o no esta disponible en tu region</strong>
+      <span>
+        {{ loadingTimedOut ? 'La senal tardo mas de 10 segundos en responder.' : 'Video.js no pudo reproducir este formato o el servidor rechazo la conexion.' }}
+      </span>
+      <ion-button fill="solid" size="small" [disabled]="reportSent || repairing" (click)="reportIssue()">
+        <ion-spinner *ngIf="repairing" slot="start" name="crescent" />
+        <ion-icon *ngIf="!repairing" slot="start" name="flag-outline" />
+        {{ repairing ? 'Intentando reparar conexion...' : (reportSent ? 'Enviado a clinica' : 'Reportar caida') }}
+      </ion-button>
+    </section>
+
+    <aside class="track-panel" *ngIf="settingsOpen">
+      <div class="track-section">
+        <strong>Audio</strong>
+        <span *ngIf="audioTracks.length === 0">Sin pistas extra</span>
+        <button
+          type="button"
+          *ngFor="let track of audioTracks"
+          [class.active]="track.active"
+          (click)="selectAudioTrack(track.id)">
+          {{ track.label }}
+          <small>{{ track.language }}</small>
+        </button>
+      </div>
+
+      <div class="track-section">
+        <strong>Subtitulos</strong>
+        <button
+          type="button"
+          [class.active]="selectedTextTrackId === 'off'"
+          (click)="selectTextTrack('off')">
+          Apagados
+        </button>
+        <button
+          type="button"
+          *ngFor="let track of textTracks"
+          [class.active]="track.active"
+          (click)="selectTextTrack(track.id)">
+          {{ track.label }}
+          <small>{{ track.language }}</small>
+        </button>
+      </div>
+    </aside>
+  </div>
+</section>

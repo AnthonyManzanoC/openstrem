@@ -1,0 +1,8 @@
+<aside class="ad-banner" [class.compact]="compact" *ngIf="shouldRender()">
+  <div class="ad-icon" aria-hidden="true">AD</div>
+  <div class="ad-copy">
+    <strong>[Espacio Publicitario]</strong>
+    <span>{{ getPlatformLabel() }} - {{ getPlacementId() }}</span>
+  </div>
+  <small *ngIf="config.usingFallbackAds()">TEST</small>
+</aside>

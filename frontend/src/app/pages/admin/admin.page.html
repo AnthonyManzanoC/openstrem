@@ -1,0 +1,103 @@
+<ion-content class="admin-shell" fullscreen>
+  <main class="admin-layout">
+    <header class="admin-header">
+      <div>
+        <p>Clinica de senales</p>
+        <h1>Reportes pendientes</h1>
+        <div class="admin-stats" aria-live="polite">
+          <span>{{ channels.length }} visibles</span>
+          <span>{{ totalReports }} en cola</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <ion-button fill="clear" class="icon-button" aria-label="Actualizar reportes" (click)="loadReports()">
+          <ion-icon slot="icon-only" name="refresh-outline" />
+        </ion-button>
+        <ion-button fill="outline" class="home-button" (click)="goToWelcome()">
+          <ion-icon slot="start" name="arrow-back-outline" />
+          App
+        </ion-button>
+      </div>
+    </header>
+
+    <section class="feedback" [attr.data-kind]="feedbackKind" *ngIf="feedback">
+      {{ feedback }}
+    </section>
+
+    <section class="loading-state" *ngIf="loading">
+      <ion-spinner name="crescent" />
+      <span>Cargando reportes</span>
+    </section>
+
+    <section class="empty-state" *ngIf="!loading && channels.length === 0">
+      <strong>Sin reportes abiertos</strong>
+      <span>Los canales reparados o archivados desaparecen de esta cola.</span>
+    </section>
+
+    <section class="report-table" *ngIf="!loading && channels.length > 0">
+      <table>
+        <thead>
+          <tr>
+            <th>Canal</th>
+            <th>Categoria</th>
+            <th>URL de reparacion</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let channel of channels; trackBy: trackByChannelId">
+            <td>
+              <strong>{{ channel.name }}</strong>
+              <small>{{ channel.status }}</small>
+            </td>
+            <td>{{ channel.categoryName || 'General' }}</td>
+            <td>
+              <div class="url-tools">
+                <label class="url-editor">
+                  <input
+                    type="url"
+                    [(ngModel)]="draftUrls[channel.id]"
+                    [disabled]="isBusy(channel.id)"
+                    autocomplete="off"
+                    spellcheck="false">
+                </label>
+
+                <ion-button
+                  fill="clear"
+                  class="lookup-button"
+                  title="Buscar Reemplazo"
+                  aria-label="Buscar reemplazo para este canal"
+                  [disabled]="isBusy(channel.id)"
+                  (click)="searchReplacement(channel)">
+                  <ion-icon slot="icon-only" name="search-outline" />
+                </ion-button>
+              </div>
+            </td>
+            <td>
+              <div class="row-actions">
+                <ion-button size="small" fill="solid" [disabled]="isBusy(channel.id)" (click)="saveUrl(channel)">
+                  <ion-spinner *ngIf="isBusy(channel.id, 'save')" slot="start" name="crescent" />
+                  <ion-icon *ngIf="!isBusy(channel.id, 'save')" slot="start" name="save-outline" />
+                  Editar URL
+                </ion-button>
+
+                <ion-button size="small" fill="outline" [disabled]="isBusy(channel.id)" (click)="forceProxy(channel)">
+                  <ion-spinner *ngIf="isBusy(channel.id, 'proxy')" slot="start" name="crescent" />
+                  <ion-icon *ngIf="!isBusy(channel.id, 'proxy')" slot="start" name="shield-checkmark-outline" />
+                  Forzar Proxy
+                </ion-button>
+
+                <ion-button size="small" fill="clear" class="danger-button" [disabled]="isBusy(channel.id)" (click)="archive(channel)">
+                  <ion-spinner *ngIf="isBusy(channel.id, 'archive')" slot="start" name="crescent" />
+                  <ion-icon *ngIf="!isBusy(channel.id, 'archive')" slot="start" name="archive-outline" />
+                  Archivar
+                </ion-button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</ion-content>

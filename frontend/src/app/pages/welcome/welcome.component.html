@@ -1,0 +1,49 @@
+<ion-content class="welcome-shell" fullscreen [scrollY]="false">
+  <div class="splash-screen" *ngIf="showSplash" [class.leaving]="splashLeaving" aria-hidden="true">
+    <div class="splash-brand">
+      <span class="splash-mark">
+        <ion-icon name="tv-outline" />
+      </span>
+      <strong>OpenStream</strong>
+      <span class="splash-line"></span>
+    </div>
+  </div>
+
+  <main class="welcome-stage" aria-label="Bienvenida OpenStream">
+    <button type="button" class="welcome-settings" aria-label="Abrir configuracion" (click)="goToSettings()">
+      <ion-icon name="settings-outline" aria-hidden="true" />
+    </button>
+
+    <header class="welcome-brand">
+      <span class="brand-mark" aria-hidden="true">
+        <ion-icon name="tv-outline" />
+      </span>
+      <p>OpenStream</p>
+      <h1>Elige como quieres ver TV</h1>
+    </header>
+
+    <section class="welcome-actions" aria-label="Opciones de inicio">
+      <button type="button" class="mode-card" (click)="goToHome()">
+        <span class="mode-icon" aria-hidden="true">
+          <ion-icon name="grid-outline" />
+        </span>
+        <span class="mode-copy">
+          <strong>Explorar Catalogo</strong>
+          <small>Canales, busqueda y favoritos</small>
+        </span>
+        <ion-icon class="mode-arrow" name="arrow-forward-outline" aria-hidden="true" />
+      </button>
+
+      <button type="button" class="mode-card primary" (click)="goToTv()">
+        <span class="mode-icon" aria-hidden="true">
+          <ion-icon name="tv-outline" />
+        </span>
+        <span class="mode-copy">
+          <strong>TV Tradicional</strong>
+          <small>Zapping y pantalla completa</small>
+        </span>
+        <ion-icon class="mode-arrow" name="arrow-forward-outline" aria-hidden="true" />
+      </button>
+    </section>
+  </main>
+</ion-content>

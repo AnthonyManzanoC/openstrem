@@ -1,0 +1,159 @@
+<ion-content class="settings-shell" fullscreen>
+  <main class="settings-layout">
+    <header class="settings-header">
+      <button type="button" class="back-link" aria-label="Volver a OpenStream" (click)="goToWelcome()">
+        <ion-icon name="arrow-back-outline" aria-hidden="true" />
+      </button>
+
+      <div class="header-copy">
+        <p>Centro de control</p>
+        <h1>Configuracion</h1>
+        <span>Preferencias guardadas solo para este cliente.</span>
+      </div>
+    </header>
+
+    <section class="settings-grid" aria-label="Preferencias de OpenStream">
+      <article class="settings-card">
+        <header class="card-header">
+          <span class="section-icon" aria-hidden="true">
+            <ion-icon name="settings-outline" />
+          </span>
+          <div>
+            <p>Personalizacion</p>
+            <h2>Apariencia e inicio</h2>
+          </div>
+        </header>
+
+        <div class="choice-block">
+          <strong>Modo de color</strong>
+          <div class="choice-list two-columns" role="group" aria-label="Modo de color">
+            <button
+              type="button"
+              class="choice-button"
+              *ngFor="let option of themeOptions"
+              [class.active]="preferences().theme === option.value"
+              [attr.aria-pressed]="preferences().theme === option.value"
+              (click)="setTheme(option.value)">
+              <ion-icon [name]="option.icon" aria-hidden="true" />
+              <span>
+                <b>{{ option.label }}</b>
+                <small>{{ option.description }}</small>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <div class="choice-block">
+          <strong>Pantalla de inicio</strong>
+          <div class="choice-list" role="group" aria-label="Pantalla de inicio">
+            <button
+              type="button"
+              class="choice-button"
+              *ngFor="let option of startOptions"
+              [class.active]="preferences().startPage === option.value"
+              [attr.aria-pressed]="preferences().startPage === option.value"
+              (click)="setStartPage(option.value)">
+              <ion-icon [name]="option.icon" aria-hidden="true" />
+              <span>
+                <b>{{ option.label }}</b>
+                <small>{{ option.description }}</small>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <div class="choice-block">
+          <strong>Idioma</strong>
+          <div class="choice-list two-columns" role="group" aria-label="Idioma preferido">
+            <button
+              type="button"
+              class="choice-button"
+              *ngFor="let option of languageOptions"
+              [class.active]="preferences().language === option.value"
+              [attr.aria-pressed]="preferences().language === option.value"
+              (click)="setLanguage(option.value)">
+              <ion-icon [name]="option.icon" aria-hidden="true" />
+              <span>
+                <b>{{ option.label }}</b>
+                <small>{{ option.description }}</small>
+              </span>
+            </button>
+          </div>
+        </div>
+      </article>
+
+      <article class="settings-card">
+        <header class="card-header">
+          <span class="section-icon" aria-hidden="true">
+            <ion-icon name="play-circle-outline" />
+          </span>
+          <div>
+            <p>Reproduccion</p>
+            <h2>Segundo plano</h2>
+          </div>
+        </header>
+
+        <button
+          type="button"
+          class="switch-row"
+          [class.active]="preferences().pauseInBackground"
+          [attr.aria-pressed]="preferences().pauseInBackground"
+          (click)="togglePauseInBackground()">
+          <span class="switch-copy">
+            <b>Pausar video al minimizar</b>
+            <small>
+              {{ preferences().pauseInBackground
+                ? 'Ahorra datos cuando sales de la app.'
+                : 'Mantiene el audio activo como radio.' }}
+            </small>
+          </span>
+          <span class="switch-track" aria-hidden="true">
+            <span class="switch-thumb">
+              <ion-icon [name]="preferences().pauseInBackground ? 'pause-circle-outline' : 'play-circle-outline'" />
+            </span>
+          </span>
+        </button>
+
+        <p class="note">
+          Recomendado: dejarlo apagado si usas noticias o musica en vivo. Encenderlo ayuda a cuidar datos.
+        </p>
+      </article>
+
+      <article class="settings-card identity-card">
+        <header class="card-header">
+          <span class="section-icon" aria-hidden="true">
+            <ion-icon name="person-circle-outline" />
+          </span>
+          <div>
+            <p>Identidad local</p>
+            <h2>Tu cliente</h2>
+          </div>
+        </header>
+
+        <div class="client-id">
+          <span>ID de cliente</span>
+          <code>{{ clientId }}</code>
+        </div>
+      </article>
+
+      <article class="settings-card about-card">
+        <header class="card-header">
+          <span class="section-icon" aria-hidden="true">
+            <ion-icon name="information-circle-outline" />
+          </span>
+          <div>
+            <p>Acerca de la app</p>
+            <h2>OpenStream v1.0.0</h2>
+          </div>
+        </header>
+
+        <p>
+          OpenStream organiza canales de TV en vivo, favoritos locales y un modo TV simple para ver contenido con menos pasos.
+        </p>
+        <p>
+          Al usar la app aceptas que las preferencias, favoritos e ID de cliente se guardan en este dispositivo. Las senales pueden depender de disponibilidad regional y de cada proveedor.
+        </p>
+      </article>
+    </section>
+  </main>
+</ion-content>

@@ -1,0 +1,102 @@
+@import "video.js/dist/video-js.css";
+
+:root {
+  --bg-primary: #020405;
+  --bg-secondary: #080808;
+  --text-main: #ffffff;
+  --text-muted: #b8c6cb;
+  --text-subtle: #8fa0a6;
+  --hero-title: #ffffff;
+  --hero-title-shadow: 0 16px 46px rgba(0, 0, 0, 0.34);
+  --on-media-text: #f8fafc;
+  --on-media-muted: rgba(226, 236, 242, 0.78);
+  --border-soft: rgba(255, 255, 255, 0.14);
+  --surface-card: rgba(255, 255, 255, 0.07);
+  --surface-raised: rgba(255, 255, 255, 0.075);
+  --surface-glass: rgba(255, 255, 255, 0.08);
+  --surface-selected: rgba(34, 211, 238, 0.12);
+  --input-bg: rgba(255, 255, 255, 0.07);
+  --accent-cyan: #68e8ff;
+  --accent-gold: #ffcc4d;
+  --accent-red: #e53935;
+  --accent-chip: rgba(34, 211, 238, 0.12);
+  --accent-border: rgba(34, 211, 238, 0.55);
+  --accent-soft: rgba(34, 211, 238, 0.16);
+  --gold-soft: rgba(255, 204, 77, 0.12);
+  --danger-bg: rgba(65, 24, 22, 0.56);
+  --danger-text: #ffddd8;
+  --page-gradient: linear-gradient(180deg, #071012 0%, #030506 48%, #000000 100%);
+  --home-gradient:
+    linear-gradient(135deg, rgba(229, 57, 53, 0.16) 0%, transparent 34%),
+    linear-gradient(225deg, rgba(34, 211, 238, 0.1) 0%, transparent 30%),
+    linear-gradient(180deg, #080808 0%, #050505 54%, #000000 100%);
+  --side-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025)), rgba(8, 8, 8, 0.86);
+  --logo-surface: linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent), #111111;
+  --shadow-soft: 0 18px 45px rgba(0, 0, 0, 0.28);
+  --shadow-strong: 0 24px 70px rgba(0, 0, 0, 0.42);
+}
+
+body.light-theme {
+  --bg-primary: #f6f8fb;
+  --bg-secondary: #eef2f7;
+  --text-main: #10202a;
+  --text-muted: #536471;
+  --text-subtle: #6f7f8b;
+  --hero-title: #0f202b;
+  --hero-title-shadow: 0 12px 36px rgba(75, 99, 117, 0.14);
+  --on-media-text: #f8fafc;
+  --on-media-muted: rgba(226, 236, 242, 0.78);
+  --border-soft: rgba(16, 32, 42, 0.13);
+  --surface-card: rgba(255, 255, 255, 0.88);
+  --surface-raised: rgba(255, 255, 255, 0.76);
+  --surface-glass: rgba(255, 255, 255, 0.72);
+  --surface-selected: rgba(0, 145, 170, 0.1);
+  --input-bg: rgba(255, 255, 255, 0.86);
+  --accent-cyan: #007f95;
+  --accent-gold: #a15c00;
+  --accent-red: #c8322e;
+  --accent-chip: rgba(0, 145, 170, 0.1);
+  --accent-border: rgba(0, 145, 170, 0.45);
+  --accent-soft: rgba(0, 145, 170, 0.16);
+  --gold-soft: rgba(255, 180, 56, 0.2);
+  --danger-bg: rgba(255, 229, 224, 0.82);
+  --danger-text: #7d211a;
+  --page-gradient: linear-gradient(180deg, #f8fbff 0%, #eef3f8 58%, #e7edf4 100%);
+  --home-gradient:
+    linear-gradient(135deg, rgba(200, 50, 46, 0.1) 0%, transparent 34%),
+    linear-gradient(225deg, rgba(0, 145, 170, 0.12) 0%, transparent 30%),
+    linear-gradient(180deg, #f8fbff 0%, #eef3f8 58%, #e7edf4 100%);
+  --side-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(246, 248, 251, 0.86)), rgba(255, 255, 255, 0.9);
+  --logo-surface: linear-gradient(135deg, rgba(0, 145, 170, 0.08), rgba(255, 180, 56, 0.08)), #ffffff;
+  --shadow-soft: 0 18px 45px rgba(20, 38, 50, 0.12);
+  --shadow-strong: 0 24px 70px rgba(20, 38, 50, 0.18);
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: var(--bg-primary);
+}
+
+app-root {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  color: var(--text-main);
+  font-family: Inter, Roboto, Arial, sans-serif;
+  transition: background 180ms ease, color 180ms ease;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input {
+  letter-spacing: 0;
+}

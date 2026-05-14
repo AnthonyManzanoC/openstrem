@@ -1,0 +1,19 @@
+{
+  "name": "OpenStream",
+  "short_name": "OpenStream",
+  "description": "TV en vivo local-first con modo TV y favoritos.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
