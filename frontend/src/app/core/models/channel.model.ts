@@ -7,6 +7,7 @@ export interface Channel {
   categoryName: string | null;
   isActive: boolean;
   showInTvMode: boolean;
+  tvModeOrder: number | null;
   status: ChannelStatus;
   lastCheckedAt?: string | null;
 }
@@ -44,6 +45,18 @@ export interface ChannelUpdateRequest {
   streamUrl?: string;
   status?: ChannelStatus;
   isActive?: boolean;
+}
+
+export interface ChannelCreateRequest {
+  name: string;
+  streamUrl: string;
+  categoryName: string;
+  showInTvMode: boolean;
+}
+
+export interface ChannelOrderItem {
+  id: string;
+  position: number;
 }
 
 export interface ChannelRepairResponse {

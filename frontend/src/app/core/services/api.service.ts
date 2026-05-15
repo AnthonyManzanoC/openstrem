@@ -6,6 +6,8 @@ import { AdsConfig } from '../models/ads-config.model';
 import {
   Category,
   Channel,
+  ChannelCreateRequest,
+  ChannelOrderItem,
   ChannelPlaybackReport,
   ChannelQuery,
   ChannelRepairResponse,
@@ -50,6 +52,14 @@ export class ApiService {
       .set('pageSize', String(pageSize));
 
     return this.http.get<PagedResult<Channel>>(`${this.apiUrl}/channels/reported`, { params });
+  }
+
+  createChannel(request: ChannelCreateRequest): Observable<Channel> {
+    return this.http.post<Channel>(`${this.apiUrl}/channels`, request);
+  }
+
+  reorderTvChannels(channels: ChannelOrderItem[]): Observable<Channel[]> {
+    return this.http.put<Channel[]>(`${this.apiUrl}/channels/reorder`, { channels });
   }
 
   getCategories(): Observable<Category[]> {

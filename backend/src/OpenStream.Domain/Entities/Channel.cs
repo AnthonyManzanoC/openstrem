@@ -9,6 +9,7 @@ public sealed class Channel
     public Guid? CategoryId { get; set; }
     public bool IsActive { get; set; } = true;
     public bool ShowInTvMode { get; set; }
+    public int? TvModeOrder { get; set; }
     public string Status { get; set; } = "Active";
     public DateTimeOffset? LastCheckedAt { get; set; }
     public DateTimeOffset CreatedAt { get; set; }

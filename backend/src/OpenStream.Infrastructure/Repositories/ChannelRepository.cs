@@ -53,6 +53,10 @@ public sealed class ChannelRepository(IDapperConnectionFactory connectionFactory
         parameters.Add("Limit", pageSize);
         parameters.Add("Offset", (page - 1) * pageSize);
 
+        var orderBy = showInTvMode == true
+            ? @"c.""TvModeOrder"" nulls last, cat.""Name"" nulls last, c.""Name"""
+            : @"cat.""Name"" nulls last, c.""Name""";
+
         var countSql = $@"
             select count(1)
             from ""Channels"" c
@@ -69,12 +73,13 @@ public sealed class ChannelRepository(IDapperConnectionFactory connectionFactory
                 cat.""Name"" as ""CategoryName"",
                 c.""IsActive"",
                 c.""ShowInTvMode"",
+                c.""TvModeOrder"",
                 coalesce(c.""Status"", 'Active') as ""Status"",
                 c.""LastCheckedAt""
             from ""Channels"" c
             left join ""Categories"" cat on cat.""Id"" = c.""CategoryId""
             {where}
-            order by cat.""Name"" nulls last, c.""Name""
+            order by {orderBy}
             limit @Limit offset @Offset;";
 
         var total = await connection.ExecuteScalarAsync<int>(
@@ -122,6 +127,7 @@ public sealed class ChannelRepository(IDapperConnectionFactory connectionFactory
                 cat.""Name"" as ""CategoryName"",
                 c.""IsActive"",
                 c.""ShowInTvMode"",
+                c.""TvModeOrder"",
                 coalesce(c.""Status"", 'Active') as ""Status"",
                 c.""LastCheckedAt""
             from ""Channels"" c
@@ -130,6 +136,89 @@ public sealed class ChannelRepository(IDapperConnectionFactory connectionFactory
 
         return await connection.QuerySingleOrDefaultAsync<ChannelDto>(
             new CommandDefinition(sql, new { ChannelId = channelId }, cancellationToken: cancellationToken));
+    }
+
+    public async Task<ChannelDto?> CreateChannelAsync(
+        string name,
+        string streamUrl,
+        string categoryName,
+        bool showInTvMode,
+        CancellationToken cancellationToken)
+    {
+        using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        using var transaction = connection.BeginTransaction();
+
+        const string sql = @"
+            with category as (
+                insert into ""Categories"" (""Name"", ""UpdatedAt"")
+                values (@CategoryName, now())
+                on conflict (""Name"")
+                do update set ""UpdatedAt"" = excluded.""UpdatedAt""
+                returning ""Id""
+            ),
+            inserted as (
+                insert into ""Channels"" (
+                    ""Name"",
+                    ""StreamUrl"",
+                    ""LogoUrl"",
+                    ""CategoryId"",
+                    ""IsActive"",
+                    ""ShowInTvMode"",
+                    ""TvModeOrder"",
+                    ""Status"",
+                    ""LastCheckedAt"",
+                    ""UpdatedAt"")
+                select
+                    @Name,
+                    @StreamUrl,
+                    null,
+                    category.""Id"",
+                    true,
+                    @ShowInTvMode,
+                    case
+                        when @ShowInTvMode then (
+                            select coalesce(max(""TvModeOrder""), 0) + 1
+                            from ""Channels""
+                            where ""ShowInTvMode"" = true
+                        )
+                        else null
+                    end,
+                    'Active',
+                    null,
+                    now()
+                from category
+                on conflict (""Name"") do nothing
+                returning ""Id""
+            )
+            select ""Id""
+            from inserted;";
+
+        try
+        {
+            var insertedId = await connection.ExecuteScalarAsync<Guid?>(
+                new CommandDefinition(
+                    sql,
+                    new
+                    {
+                        Name = name.Trim(),
+                        StreamUrl = streamUrl.Trim(),
+                        CategoryName = categoryName.Trim(),
+                        ShowInTvMode = showInTvMode
+                    },
+                    transaction,
+                    cancellationToken: cancellationToken));
+
+            transaction.Commit();
+
+            return insertedId.HasValue
+                ? await GetByIdAsync(insertedId.Value, cancellationToken)
+                : null;
+        }
+        catch
+        {
+            transaction.Rollback();
+            throw;
+        }
     }
 
     public async Task<PagedResult<ChannelDto>> GetReportedAsync(
@@ -158,6 +247,7 @@ public sealed class ChannelRepository(IDapperConnectionFactory connectionFactory
                 cat.""Name"" as ""CategoryName"",
                 c.""IsActive"",
                 c.""ShowInTvMode"",
+                c.""TvModeOrder"",
                 coalesce(c.""Status"", 'Active') as ""Status"",
                 c.""LastCheckedAt""
             from ""Channels"" c
@@ -495,14 +585,34 @@ public sealed class ChannelRepository(IDapperConnectionFactory connectionFactory
         using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
 
         const string sql = @"
+            with target as (
+                select
+                    ""Id"",
+                    coalesce(cast(@ShowInTvMode as boolean), not ""ShowInTvMode"") as ""NextShowInTvMode""
+                from ""Channels""
+                where ""Id"" = @ChannelId
+                  and ""IsActive"" = true
+                  and coalesce(""Status"", 'Active') <> 'Archived'
+            )
             update ""Channels""
             set
-                ""ShowInTvMode"" = coalesce(cast(@ShowInTvMode as boolean), not ""ShowInTvMode""),
+                ""ShowInTvMode"" = target.""NextShowInTvMode"",
+                ""TvModeOrder"" = case
+                    when target.""NextShowInTvMode"" then coalesce(
+                        ""Channels"".""TvModeOrder"",
+                        (
+                            select coalesce(max(""TvModeOrder""), 0) + 1
+                            from ""Channels"" current_tv
+                            where current_tv.""ShowInTvMode"" = true
+                              and current_tv.""Id"" <> ""Channels"".""Id""
+                        )
+                    )
+                    else null
+                end,
                 ""UpdatedAt"" = now()
-            where ""Id"" = @ChannelId
-              and ""IsActive"" = true
-              and coalesce(""Status"", 'Active') <> 'Archived'
-            returning ""Id"";";
+            from target
+            where ""Channels"".""Id"" = target.""Id""
+            returning ""Channels"".""Id"";";
 
         var updatedId = await connection.ExecuteScalarAsync<Guid?>(
             new CommandDefinition(
@@ -517,6 +627,84 @@ public sealed class ChannelRepository(IDapperConnectionFactory connectionFactory
         return updatedId.HasValue
             ? await GetByIdAsync(updatedId.Value, cancellationToken)
             : null;
+    }
+
+    public async Task<IReadOnlyList<ChannelDto>> ReorderTvModeAsync(
+        IReadOnlyList<Guid> channelIds,
+        CancellationToken cancellationToken)
+    {
+        var orderedIds = channelIds
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .ToArray();
+
+        if (orderedIds.Length == 0)
+        {
+            return Array.Empty<ChannelDto>();
+        }
+
+        var positions = Enumerable.Range(1, orderedIds.Length).ToArray();
+
+        using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        using var transaction = connection.BeginTransaction();
+
+        const string sql = @"
+            with input as (
+                select *
+                from unnest(
+                    cast(@ChannelIds as uuid[]),
+                    cast(@Positions as integer[])
+                ) as source(""Id"", ""Position"")
+            )
+            update ""Channels"" c
+            set
+                ""ShowInTvMode"" = true,
+                ""TvModeOrder"" = input.""Position"",
+                ""UpdatedAt"" = now()
+            from input
+            where c.""Id"" = input.""Id""
+              and c.""IsActive"" = true
+              and coalesce(c.""Status"", 'Active') <> 'Archived'
+            returning c.""Id"";";
+
+        try
+        {
+            var updatedIds = await connection.QueryAsync<Guid>(
+                new CommandDefinition(
+                    sql,
+                    new
+                    {
+                        ChannelIds = orderedIds,
+                        Positions = positions
+                    },
+                    transaction,
+                    cancellationToken: cancellationToken));
+
+            transaction.Commit();
+
+            var updatedIdList = updatedIds.AsList();
+
+            if (updatedIdList.Count == 0)
+            {
+                return Array.Empty<ChannelDto>();
+            }
+
+            var result = await GetPagedAsync(
+                null,
+                null,
+                true,
+                updatedIdList,
+                1,
+                updatedIdList.Count,
+                cancellationToken);
+
+            return result.Items;
+        }
+        catch
+        {
+            transaction.Rollback();
+            throw;
+        }
     }
 
     private sealed class CategoryRow

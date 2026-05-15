@@ -19,6 +19,13 @@ public interface IChannelRepository
 
     Task<ChannelDto?> GetByIdAsync(Guid channelId, CancellationToken cancellationToken);
 
+    Task<ChannelDto?> CreateChannelAsync(
+        string name,
+        string streamUrl,
+        string categoryName,
+        bool showInTvMode,
+        CancellationToken cancellationToken);
+
     Task<PagedResult<ChannelDto>> GetReportedAsync(
         int page,
         int pageSize,
@@ -54,5 +61,9 @@ public interface IChannelRepository
     Task<ChannelDto?> SetTvModeAsync(
         Guid channelId,
         bool? showInTvMode,
+        CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<ChannelDto>> ReorderTvModeAsync(
+        IReadOnlyList<Guid> channelIds,
         CancellationToken cancellationToken);
 }

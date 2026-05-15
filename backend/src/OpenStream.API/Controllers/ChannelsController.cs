@@ -35,6 +35,92 @@ public sealed class ChannelsController(
         return Ok(result);
     }
 
+    [HttpPost]
+    public async Task<IActionResult> Create(
+        [FromBody] ChannelCreateRequest? request,
+        CancellationToken cancellationToken)
+    {
+        var name = request?.Name?.Trim();
+        var streamUrl = request?.StreamUrl?.Trim();
+        var categoryName = request?.CategoryName?.Trim();
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return BadRequest(new { message = "Name is required." });
+        }
+
+        if (string.IsNullOrWhiteSpace(streamUrl))
+        {
+            return BadRequest(new { message = "StreamUrl is required." });
+        }
+
+        if (!IsHttpUrl(streamUrl))
+        {
+            return BadRequest(new { message = "StreamUrl must be an absolute http or https URL." });
+        }
+
+        if (string.IsNullOrWhiteSpace(categoryName))
+        {
+            return BadRequest(new { message = "CategoryName is required." });
+        }
+
+        var created = await channelRepository.CreateChannelAsync(
+            name,
+            streamUrl,
+            categoryName,
+            request?.ShowInTvMode ?? false,
+            cancellationToken);
+
+        return created is null
+            ? Conflict(new { message = "A channel with that name already exists." })
+            : StatusCode(StatusCodes.Status201Created, created);
+    }
+
+    [HttpPut("reorder")]
+    public async Task<IActionResult> ReorderTvMode(
+        [FromBody] ChannelReorderRequest? request,
+        CancellationToken cancellationToken)
+    {
+        var channels = request?.Channels;
+
+        if (channels is null || channels.Count == 0)
+        {
+            return BadRequest(new { message = "At least one channel is required." });
+        }
+
+        if (channels.Any(channel => channel.Id == Guid.Empty))
+        {
+            return BadRequest(new { message = "Every channel must include a valid id." });
+        }
+
+        var duplicatedId = channels
+            .GroupBy(channel => channel.Id)
+            .FirstOrDefault(group => group.Count() > 1)
+            ?.Key;
+
+        if (duplicatedId.HasValue)
+        {
+            return BadRequest(new { message = $"Channel {duplicatedId.Value} is repeated." });
+        }
+
+        var orderedIds = channels
+            .Select((channel, index) => new
+            {
+                channel.Id,
+                Position = channel.Position > 0 ? channel.Position : index + 1
+            })
+            .OrderBy(channel => channel.Position)
+            .ThenBy(channel => channel.Id)
+            .Select(channel => channel.Id)
+            .ToArray();
+
+        var updatedChannels = await channelRepository.ReorderTvModeAsync(
+            orderedIds,
+            cancellationToken);
+
+        return Ok(updatedChannels);
+    }
+
     [HttpGet("reported")]
     public async Task<IActionResult> GetReported(
         [FromQuery] int page = 1,
@@ -215,7 +301,7 @@ public sealed class ChannelsController(
     private string BuildProxyUrl(string originalUrl)
     {
         originalUrl = ResolveOriginalStreamUrl(originalUrl);
-        // Reemplazamos Request.Scheme por "https" quemado en el código
+        // Reemplazamos Request.Scheme por "https" quemado en el cÃ³digo
         return $"https://{Request.Host}/api/proxy/stream?url={Uri.EscapeDataString(originalUrl)}";
     }
 
@@ -281,6 +367,12 @@ public sealed class ChannelsController(
 
 public sealed record PlaybackReportRequest(string? Status, string? Reason);
 
+public sealed record ChannelCreateRequest(
+    string? Name,
+    string? StreamUrl,
+    string? CategoryName,
+    bool ShowInTvMode);
+
 public sealed record ChannelUpdateRequest(
     string? StreamUrl,
     string? Status,
@@ -293,6 +385,10 @@ public sealed record ChannelUpdateRequest(
 }
 
 public sealed record ChannelTvModeRequest(bool? ShowInTvMode);
+
+public sealed record ChannelReorderRequest(IReadOnlyList<ChannelReorderItemRequest>? Channels);
+
+public sealed record ChannelReorderItemRequest(Guid Id, int Position);
 
 public sealed record ChannelRepairResponse(
     Guid Id,

@@ -5,12 +5,21 @@
         <p>Clinica de senales</p>
         <h1>Reportes pendientes</h1>
         <div class="admin-stats" aria-live="polite">
-          <span>{{ channels.length }} visibles</span>
+          <span>{{ channels.length }} reportes</span>
+          <span>{{ tvTotalCount }} canales</span>
           <span>{{ totalReports }} en cola</span>
         </div>
       </div>
 
       <div class="header-actions">
+        <ion-button fill="solid" class="primary-action" (click)="openCreatePanel()">
+          <ion-icon slot="start" name="add-outline" />
+          Añadir Canal
+        </ion-button>
+        <ion-button fill="outline" class="organize-button" (click)="openOrderPanel()">
+          <ion-icon slot="start" name="tv-outline" />
+          Organizar TV
+        </ion-button>
         <ion-button fill="clear" class="icon-button" aria-label="Actualizar reportes" (click)="loadReports()">
           <ion-icon slot="icon-only" name="refresh-outline" />
         </ion-button>
@@ -23,6 +32,234 @@
 
     <section class="feedback" [attr.data-kind]="feedbackKind" *ngIf="feedback">
       {{ feedback }}
+    </section>
+
+    <section class="admin-dialog-backdrop" *ngIf="createPanelOpen">
+      <form class="admin-dialog" (ngSubmit)="createChannel()">
+        <header class="dialog-header">
+          <div>
+            <p>Nuevo canal</p>
+            <h2>Añadir Canal</h2>
+          </div>
+          <button type="button" class="dialog-close" aria-label="Cerrar formulario" (click)="closeCreatePanel()">
+            <ion-icon name="close-outline" aria-hidden="true" />
+          </button>
+        </header>
+
+        <div class="form-grid">
+          <label class="form-field">
+            <span>Nombre del Canal</span>
+            <input
+              type="text"
+              name="channelName"
+              [(ngModel)]="newChannel.name"
+              [disabled]="creatingChannel"
+              autocomplete="off"
+              required>
+          </label>
+
+          <label class="form-field">
+            <span>URL del Stream .m3u8</span>
+            <input
+              type="url"
+              name="streamUrl"
+              [(ngModel)]="newChannel.streamUrl"
+              [disabled]="creatingChannel"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="https://servidor.com/canal.m3u8"
+              required>
+          </label>
+
+          <label class="form-field">
+            <span>Categoría</span>
+            <input
+              type="text"
+              name="categoryName"
+              [(ngModel)]="newChannel.categoryName"
+              [disabled]="creatingChannel"
+              list="admin-categories"
+              autocomplete="off"
+              required>
+            <datalist id="admin-categories">
+              <option *ngFor="let category of categories; trackBy: trackByCategoryId" [value]="category.name"></option>
+            </datalist>
+          </label>
+
+          <label class="form-toggle">
+            <input
+              type="checkbox"
+              name="showInTvMode"
+              [(ngModel)]="newChannel.showInTvMode"
+              [disabled]="creatingChannel">
+            <span class="toggle-box" aria-hidden="true"></span>
+            <span>Mostrar en TV por defecto</span>
+          </label>
+        </div>
+
+        <footer class="dialog-actions">
+          <ion-button type="button" fill="clear" [disabled]="creatingChannel" (click)="closeCreatePanel()">
+            Cancelar
+          </ion-button>
+          <ion-button type="submit" fill="solid" [disabled]="creatingChannel">
+            <ion-spinner *ngIf="creatingChannel" slot="start" name="crescent" />
+            Guardar Canal
+          </ion-button>
+        </footer>
+      </form>
+    </section>
+
+    <section class="admin-dialog-backdrop" *ngIf="orderPanelOpen">
+      <section class="admin-dialog order-dialog" aria-labelledby="order-tv-title">
+        <header class="dialog-header">
+          <div>
+            <p>Modo TV</p>
+            <h2 id="order-tv-title">Organizar TV</h2>
+          </div>
+          <button type="button" class="dialog-close" aria-label="Cerrar organizador" (click)="closeOrderPanel()">
+            <ion-icon name="close-outline" aria-hidden="true" />
+          </button>
+        </header>
+
+        <section class="loading-state compact" *ngIf="orderLoading">
+          <ion-spinner name="crescent" />
+          <span>Cargando orden</span>
+        </section>
+
+        <section class="empty-state compact" *ngIf="!orderLoading && orderedTvChannels.length === 0">
+          <strong>Sin canales predeterminados</strong>
+          <span>Activa canales en Modo TV para poder ordenarlos.</span>
+        </section>
+
+        <ol class="order-list" *ngIf="!orderLoading && orderedTvChannels.length > 0">
+          <li class="order-row" *ngFor="let channel of orderedTvChannels; let index = index; trackBy: trackByChannelId">
+            <span class="order-position">{{ index + 1 }}</span>
+            <div class="order-channel">
+              <strong>{{ channel.name }}</strong>
+              <small>{{ channel.categoryName || 'General' }}</small>
+            </div>
+            <div class="order-move-actions">
+              <button
+                type="button"
+                class="move-button"
+                [disabled]="index === 0 || savingTvOrder"
+                [attr.aria-label]="'Subir ' + channel.name"
+                (click)="moveOrderedChannel(index, -1)">
+                <ion-icon name="chevron-up-outline" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                class="move-button"
+                [disabled]="index === orderedTvChannels.length - 1 || savingTvOrder"
+                [attr.aria-label]="'Bajar ' + channel.name"
+                (click)="moveOrderedChannel(index, 1)">
+                <ion-icon name="chevron-down-outline" aria-hidden="true" />
+              </button>
+            </div>
+          </li>
+        </ol>
+
+        <footer class="dialog-actions">
+          <ion-button type="button" fill="clear" [disabled]="savingTvOrder" (click)="closeOrderPanel()">
+            Cancelar
+          </ion-button>
+          <ion-button type="button" fill="solid" [disabled]="savingTvOrder || orderLoading || orderedTvChannels.length === 0" (click)="saveTvOrder()">
+            <ion-spinner *ngIf="savingTvOrder" slot="start" name="crescent" />
+            Guardar Orden
+          </ion-button>
+        </footer>
+      </section>
+    </section>
+
+    <section class="tv-admin-panel" aria-labelledby="tv-admin-title">
+      <header class="section-header">
+        <div>
+          <p>Configuracion global</p>
+          <h2 id="tv-admin-title">Predeterminados de Modo TV</h2>
+        </div>
+
+        <div class="tv-admin-tools">
+          <label class="admin-search">
+            <ion-icon name="search-outline" aria-hidden="true" />
+            <input
+              type="search"
+              [(ngModel)]="tvSearchTerm"
+              (ngModelChange)="onTvSearchTermChange($event)"
+              autocomplete="off"
+              placeholder="Buscar canal">
+            <button
+              type="button"
+              class="search-clear"
+              *ngIf="tvSearchTerm"
+              aria-label="Limpiar busqueda"
+              (click)="clearTvSearch()">
+              <ion-icon name="close-outline" aria-hidden="true" />
+            </button>
+          </label>
+
+          <ion-button fill="clear" class="icon-button" aria-label="Actualizar canales TV" (click)="loadTvChannels(true)">
+            <ion-icon slot="icon-only" name="refresh-outline" />
+          </ion-button>
+        </div>
+      </header>
+
+      <section class="loading-state compact" *ngIf="tvLoading && tvChannels.length === 0">
+        <ion-spinner name="crescent" />
+        <span>Cargando canales</span>
+      </section>
+
+      <section class="empty-state compact" *ngIf="!tvLoading && tvChannels.length === 0">
+        <strong>Sin canales para configurar</strong>
+        <span>Prueba otra busqueda o actualiza la lista.</span>
+      </section>
+
+      <div class="report-table tv-table" *ngIf="tvChannels.length > 0">
+        <table>
+          <thead>
+            <tr>
+              <th>Canal</th>
+              <th>Categoria</th>
+              <th>Estado</th>
+              <th>Modo TV global</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let channel of tvChannels; trackBy: trackByChannelId">
+              <td>
+                <strong>{{ channel.name }}</strong>
+                <small>{{ channel.streamUrl }}</small>
+              </td>
+              <td>{{ channel.categoryName || 'General' }}</td>
+              <td>{{ channel.status }}</td>
+              <td>
+                <button
+                  type="button"
+                  class="tv-switch"
+                  [class.active]="channel.showInTvMode"
+                  [disabled]="isBusy(channel.id)"
+                  [attr.aria-pressed]="channel.showInTvMode"
+                  [attr.aria-label]="channel.showInTvMode ? 'Quitar canal de Modo TV global' : 'Destacar canal en Modo TV global'"
+                  (click)="toggleGlobalTvMode(channel)">
+                  <span class="switch-track" aria-hidden="true">
+                    <span class="switch-thumb">
+                      <ion-spinner *ngIf="isBusy(channel.id, 'tvMode')" name="crescent" />
+                      <ion-icon *ngIf="!isBusy(channel.id, 'tvMode')" [name]="channel.showInTvMode ? 'star' : 'star-outline'" />
+                    </span>
+                  </span>
+                  <span>{{ channel.showInTvMode ? 'Destacado' : 'No destacado' }}</span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="load-more-row" *ngIf="tvChannels.length > 0 && tvHasMore">
+        <ion-button fill="outline" [disabled]="tvLoading" (click)="loadTvChannels(false)">
+          <ion-spinner *ngIf="tvLoading" slot="start" name="crescent" />
+          Cargar mas canales
+        </ion-button>
+      </div>
     </section>
 
     <section class="loading-state" *ngIf="loading">

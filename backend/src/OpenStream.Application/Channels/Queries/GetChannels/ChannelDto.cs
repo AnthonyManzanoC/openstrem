@@ -12,6 +12,7 @@ public class ChannelDto
     public string? CategoryName { get; set; }
     public bool IsActive { get; set; }
     public bool ShowInTvMode { get; set; }
+    public int? TvModeOrder { get; set; }
     public string Status { get; set; } = "Active";
 
     // Cambiado a DateTime? para que coincida exactamente con lo que devuelve PostgreSQL
