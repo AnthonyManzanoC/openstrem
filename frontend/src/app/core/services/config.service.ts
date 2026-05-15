@@ -1,18 +1,15 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
-import { Capacitor } from '@capacitor/core';
 import { catchError, firstValueFrom, map, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AdsConfig } from '../models/ads-config.model';
 
+const FALLBACK_AD_SCRIPT = "<script>console.log('Ad Placeholder');</script>";
+
 const TEST_ADS_CONFIG: AdsConfig = {
   id: '',
-  adMobBannerId: 'ca-app-pub-3940256099942544/6300978111',
-  adMobInterstitialId: 'ca-app-pub-3940256099942544/1033173712',
-  webAdClient: 'ca-pub-3940256099942544'
+  adScript: FALLBACK_AD_SCRIPT
 };
-
-export type AppRuntime = 'android' | 'ios' | 'capacitor' | 'electron' | 'web';
 
 @Injectable({
   providedIn: 'root'
@@ -47,48 +44,16 @@ export class ConfigService {
     return this.loadPromise;
   }
 
-  getRuntime(): AppRuntime {
-    if (Capacitor.isNativePlatform()) {
-      const platform = Capacitor.getPlatform();
-
-      if (platform === 'android' || platform === 'ios') {
-        return platform;
-      }
-
-      return 'capacitor';
-    }
-
-    if (typeof document !== 'undefined'
-      && document.documentElement.dataset['platform'] === 'electron') {
-      return 'electron';
-    }
-
-    if (typeof navigator !== 'undefined'
-      && navigator.userAgent.toLowerCase().includes('electron')) {
-      return 'electron';
-    }
-
-    return 'web';
-  }
-
-  isNativeMobile(): boolean {
-    const runtime = this.getRuntime();
-    return runtime === 'android' || runtime === 'ios' || runtime === 'capacitor';
-  }
-
   private normalizeConfig(config: Partial<AdsConfig> | null | undefined): AdsConfig {
-    const adMobBannerId = this.clean(config?.adMobBannerId);
-    const adMobInterstitialId = this.clean(config?.adMobInterstitialId);
-    const webAdClient = this.clean(config?.webAdClient);
-    const usesFallback = !adMobBannerId || !adMobInterstitialId || !webAdClient;
+    const adScript = this.clean(config?.adScript);
+    const normalizedAdScript = adScript || TEST_ADS_CONFIG.adScript;
+    const usesFallback = !adScript || normalizedAdScript === TEST_ADS_CONFIG.adScript;
 
     this.fallbackState.set(usesFallback);
 
     return {
       id: this.clean(config?.id),
-      adMobBannerId: adMobBannerId || TEST_ADS_CONFIG.adMobBannerId,
-      adMobInterstitialId: adMobInterstitialId || TEST_ADS_CONFIG.adMobInterstitialId,
-      webAdClient: webAdClient || TEST_ADS_CONFIG.webAdClient
+      adScript: normalizedAdScript
     };
   }
 

@@ -15,9 +15,9 @@ public sealed class ConfigController(IAppConfigRepository appConfigRepository) :
 
         return Ok(config with
         {
-            AdMobBannerId = config.AdMobBannerId ?? string.Empty,
-            AdMobInterstitialId = config.AdMobInterstitialId ?? string.Empty,
-            WebAdClient = config.WebAdClient ?? string.Empty
+            AdScript = string.IsNullOrWhiteSpace(config.AdScript)
+                ? AdsConfigDefaults.FallbackAdScript
+                : config.AdScript
         });
     }
 }

@@ -46,12 +46,13 @@ where c."Id" = ordered_tv_channels."Id"
 
 create table if not exists "AppConfig" (
     "Id" uuid primary key default gen_random_uuid(),
-    "AdMobBannerId" text not null default '',
-    "AdMobInterstitialId" text not null default '',
-    "WebAdClient" text not null default '',
+    "AdScript" text not null default '',
     "CreatedAt" timestamptz not null default now(),
     "UpdatedAt" timestamptz not null default now()
 );
+
+alter table "AppConfig"
+    add column if not exists "AdScript" text not null default '';
 
 create index if not exists "IX_Channels_CategoryId" on "Channels" ("CategoryId");
 create index if not exists "IX_Channels_IsActive" on "Channels" ("IsActive");
@@ -61,6 +62,6 @@ create index if not exists "IX_Channels_Status" on "Channels" ("Status");
 create index if not exists "IX_Channels_Name" on "Channels" ("Name");
 create index if not exists "IX_Categories_Name" on "Categories" ("Name");
 
-insert into "AppConfig" ("AdMobBannerId", "AdMobInterstitialId", "WebAdClient")
-select '', '', ''
+insert into "AppConfig" ("AdScript")
+select '<script>console.log(''Ad Placeholder'');</script>'
 where not exists (select 1 from "AppConfig");
