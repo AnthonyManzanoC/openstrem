@@ -61,8 +61,8 @@ ion-content.tv-shell::part(scroll) {
 
 .menu-toggle {
   position: fixed;
-  top: max(14px, env(safe-area-inset-top));
-  left: max(14px, env(safe-area-inset-left));
+  top: max(14px, var(--tv-safe-top));
+  left: max(14px, var(--tv-safe-left));
   z-index: 10060;
   width: 48px;
   height: 48px;
@@ -450,7 +450,7 @@ ion-content.tv-shell::part(scroll) {
 .tv-side-controls {
   position: fixed;
   top: 50%;
-  right: max(14px, env(safe-area-inset-right));
+  right: max(14px, var(--tv-safe-right));
   z-index: 10070;
   max-height: calc(100vh - 112px);
   max-height: calc(100dvh - 112px);
@@ -528,7 +528,7 @@ ion-content.tv-shell::part(scroll) {
 .tv-bottom-osd {
   position: fixed;
   right: 16px;
-  bottom: max(12px, env(safe-area-inset-bottom));
+  bottom: max(12px, var(--tv-safe-bottom));
   left: 16px;
   z-index: 10065;
   display: grid;
@@ -635,7 +635,7 @@ ion-content.tv-shell::part(scroll) {
 .cinema-unlock {
   position: fixed;
   left: 50%;
-  bottom: max(22px, env(safe-area-inset-bottom));
+  bottom: max(22px, var(--tv-safe-bottom));
   z-index: 10080;
   width: 58px;
   height: 58px;
@@ -667,7 +667,7 @@ ion-content.tv-shell::part(scroll) {
 .tv-toast {
   position: fixed;
   left: 50%;
-  bottom: max(86px, calc(env(safe-area-inset-bottom) + 86px));
+  bottom: max(86px, calc(var(--tv-safe-bottom) + 86px));
   z-index: 10090;
   max-width: calc(100vw - 28px);
   padding: 10px 14px;

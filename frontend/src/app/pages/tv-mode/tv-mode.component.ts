@@ -6,6 +6,7 @@ import {
   ScreenOrientation as CapacitorScreenOrientation,
   type OrientationLockType
 } from '@capacitor/screen-orientation';
+import { StatusBar } from '@capacitor/status-bar';
 import {
   IonContent,
   IonIcon,
@@ -482,6 +483,8 @@ export class TvModeComponent implements OnInit, OnDestroy {
           : 'Modo vertical activado');
       }
     }
+
+    await this.applyNativeSystemUi(mode);
   }
 
   private async restorePortraitOrientation(): Promise<void> {
@@ -499,6 +502,8 @@ export class TvModeComponent implements OnInit, OnDestroy {
     } catch {
       // Keeping the menu usable matters more than forcing unsupported web APIs.
     }
+
+    await this.applyNativeSystemUi('portrait');
   }
 
   private async lockOrientation(mode: TvOrientationMode): Promise<void> {
@@ -520,6 +525,25 @@ export class TvModeComponent implements OnInit, OnDestroy {
 
     const screenOrientation = this.getWebScreenOrientation();
     screenOrientation?.unlock?.();
+  }
+
+  private async applyNativeSystemUi(mode: TvOrientationMode): Promise<void> {
+    if (!Capacitor.isNativePlatform() || !Capacitor.isPluginAvailable('StatusBar')) {
+      return;
+    }
+
+    try {
+      if (mode === 'landscape') {
+        await StatusBar.setOverlaysWebView({ overlay: true });
+        await StatusBar.hide();
+        return;
+      }
+
+      await StatusBar.setOverlaysWebView({ overlay: false });
+      await StatusBar.show();
+    } catch (error) {
+      console.error('No se pudo ajustar la barra de estado del modo TV.', error);
+    }
   }
 
   private async lockWebOrientation(orientation: OrientationLockType): Promise<void> {

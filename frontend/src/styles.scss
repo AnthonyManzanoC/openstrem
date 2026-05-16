@@ -139,10 +139,43 @@ input {
   line-height: 1.35;
 }
 
+app-tv-mode ion-content.tv-shell {
+  --offset-bottom: 0px;
+  --offset-top: 0px;
+  --padding-bottom: 0px;
+  --padding-end: 0px;
+  --padding-start: 0px;
+  --padding-top: 0px;
+}
+
+app-tv-mode .tv-layout {
+  --tv-safe-bottom: env(safe-area-inset-bottom);
+  --tv-safe-left: env(safe-area-inset-left);
+  --tv-safe-right: env(safe-area-inset-right);
+  --tv-safe-top: env(safe-area-inset-top);
+}
+
+app-tv-mode .tv-layout.orientation-landscape {
+  --tv-safe-bottom: 0px;
+  --tv-safe-left: 0px;
+  --tv-safe-right: 0px;
+  --tv-safe-top: 0px;
+}
+
+app-tv-mode .tv-layout.orientation-landscape .player-frame .vjs-tech,
+app-tv-mode .tv-layout.orientation-landscape .player-frame video {
+  object-fit: cover !important;
+}
+
+app-tv-mode .tv-layout.orientation-landscape .player-frame .manual-report-button {
+  top: 12px !important;
+  right: 12px !important;
+}
+
 @media (max-width: 820px) {
   app-tv-mode .tv-layout .channel-panel {
-    top: max(10px, env(safe-area-inset-top));
-    bottom: max(10px, env(safe-area-inset-bottom));
+    top: max(10px, var(--tv-safe-top, env(safe-area-inset-top)));
+    bottom: max(10px, var(--tv-safe-bottom, env(safe-area-inset-bottom)));
     width: min(318px, 78vw);
     max-width: calc(100vw - 64px);
     height: auto;
