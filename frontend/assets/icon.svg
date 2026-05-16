@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="OpenStream">
+  <rect width="512" height="512" rx="112" fill="#071012"/>
+  <path d="M96 126c0-24 20-44 44-44h232c24 0 44 20 44 44v162c0 24-20 44-44 44H140c-24 0-44-20-44-44V126Z" fill="url(#panel)"/>
+  <path d="M150 142h212c9 0 16 7 16 16v98c0 9-7 16-16 16H150c-9 0-16-7-16-16v-98c0-9 7-16 16-16Z" fill="#ffffff" fill-opacity=".16"/>
+  <path d="M224 178v72l70-36-70-36Z" fill="#ffffff"/>
+  <path d="M190 384h132" stroke="#68e8ff" stroke-width="28" stroke-linecap="round"/>
+  <path d="M256 332v52" stroke="#68e8ff" stroke-width="28" stroke-linecap="round"/>
+  <defs>
+    <linearGradient id="panel" x1="96" x2="416" y1="82" y2="332" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#e53935"/>
+      <stop offset=".52" stop-color="#ffcc4d"/>
+      <stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+  </defs>
+</svg>

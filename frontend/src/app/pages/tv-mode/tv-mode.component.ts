@@ -1,6 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { Capacitor } from '@capacitor/core';
+import {
+  ScreenOrientation as CapacitorScreenOrientation,
+  type OrientationLockType
+} from '@capacitor/screen-orientation';
 import {
   IonContent,
   IonIcon,
@@ -17,6 +22,11 @@ import {
 } from '../../shared/player/player.component';
 
 type TvSignalState = 'online' | 'slow' | 'failed' | 'idle';
+type TvOrientationMode = 'landscape' | 'portrait';
+type WebScreenOrientation = ScreenOrientation & {
+  lock?: (orientation: OrientationLockType) => Promise<void>;
+  unlock?: () => void;
+};
 
 @Component({
   selector: 'app-tv-mode',
@@ -49,20 +59,30 @@ export class TvModeComponent implements OnInit, OnDestroy {
   isLocked = false;
   isPipActive = false;
   toastMessage = '';
+  orientationMode: TvOrientationMode = 'landscape';
+  isViewportPortrait = false;
+  showRotateHint = false;
 
   private readonly pageSize = 100;
+  private readonly rotateHintMs = 4600;
   private readonly logoFailureIds = new Set<string>();
   private toastTimer: ReturnType<typeof setTimeout> | null = null;
+  private rotateHintTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(private router: Router) {}
 
   ngOnInit(): void {
     this.favorites.getClientId();
+    this.bindViewportOrientation();
+    void this.applyOrientationMode('landscape', true);
     this.loadTvChannels();
   }
 
   ngOnDestroy(): void {
     this.clearToastTimer();
+    this.clearRotateHintTimer();
+    this.unbindViewportOrientation();
+    void this.restorePortraitOrientation();
     this.exitPictureInPicture();
   }
 
@@ -165,6 +185,26 @@ export class TvModeComponent implements OnInit, OnDestroy {
 
   previousChannel(): void {
     this.navigateChannel(-1);
+  }
+
+  get orientationButtonLabel(): string {
+    return this.orientationMode === 'landscape'
+      ? 'Cambiar a vertical'
+      : 'Cambiar a horizontal';
+  }
+
+  get orientationButtonIcon(): string {
+    return this.orientationMode === 'landscape'
+      ? 'phone-portrait-outline'
+      : 'phone-landscape-outline';
+  }
+
+  toggleOrientationMode(): void {
+    const nextMode: TvOrientationMode = this.orientationMode === 'landscape'
+      ? 'portrait'
+      : 'landscape';
+
+    void this.applyOrientationMode(nextMode, false);
   }
 
   changeVolume(delta: number): void {
@@ -414,6 +454,138 @@ export class TvModeComponent implements OnInit, OnDestroy {
     clearTimeout(this.toastTimer);
     this.toastTimer = null;
   }
+
+  private async applyOrientationMode(mode: TvOrientationMode, automatic: boolean): Promise<void> {
+    this.orientationMode = mode;
+    this.updateViewportOrientationState();
+    this.showRotateHint = false;
+    this.clearRotateHintTimer();
+
+    try {
+      await this.lockOrientation(mode);
+
+      if (!automatic) {
+        this.showToast(mode === 'landscape' ? 'Modo horizontal activado' : 'Modo vertical activado');
+      }
+    } catch {
+      if (mode === 'landscape' && this.isViewportPortrait) {
+        this.showRotateHint = true;
+        this.rotateHintTimer = setTimeout(() => {
+          this.showRotateHint = false;
+          this.rotateHintTimer = null;
+        }, this.rotateHintMs);
+      }
+
+      if (!automatic) {
+        this.showToast(mode === 'landscape'
+          ? 'Voltea tu telefono para modo horizontal'
+          : 'Modo vertical activado');
+      }
+    }
+  }
+
+  private async restorePortraitOrientation(): Promise<void> {
+    this.orientationMode = 'portrait';
+    this.showRotateHint = false;
+
+    try {
+      await this.unlockOrientation();
+    } catch {
+      // Some browsers only allow orientation changes after a user gesture.
+    }
+
+    try {
+      await this.lockOrientation('portrait');
+    } catch {
+      // Keeping the menu usable matters more than forcing unsupported web APIs.
+    }
+  }
+
+  private async lockOrientation(mode: TvOrientationMode): Promise<void> {
+    const orientation = mode === 'landscape' ? 'landscape' : 'portrait-primary';
+
+    if (Capacitor.isNativePlatform()) {
+      await CapacitorScreenOrientation.lock({ orientation });
+      return;
+    }
+
+    await this.lockWebOrientation(orientation);
+  }
+
+  private async unlockOrientation(): Promise<void> {
+    if (Capacitor.isNativePlatform()) {
+      await CapacitorScreenOrientation.unlock();
+      return;
+    }
+
+    const screenOrientation = this.getWebScreenOrientation();
+    screenOrientation?.unlock?.();
+  }
+
+  private async lockWebOrientation(orientation: OrientationLockType): Promise<void> {
+    const screenOrientation = this.getWebScreenOrientation();
+
+    if (!screenOrientation?.lock) {
+      throw new Error('Screen Orientation API is not available');
+    }
+
+    await screenOrientation.lock(orientation);
+  }
+
+  private getWebScreenOrientation(): WebScreenOrientation | null {
+    if (typeof screen === 'undefined' || !screen.orientation) {
+      return null;
+    }
+
+    return screen.orientation as WebScreenOrientation;
+  }
+
+  private bindViewportOrientation(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    this.updateViewportOrientationState();
+    window.addEventListener('resize', this.handleViewportOrientationChange, { passive: true });
+    window.addEventListener('orientationchange', this.handleViewportOrientationChange, { passive: true });
+  }
+
+  private unbindViewportOrientation(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.removeEventListener('resize', this.handleViewportOrientationChange);
+    window.removeEventListener('orientationchange', this.handleViewportOrientationChange);
+  }
+
+  private updateViewportOrientationState(): void {
+    if (typeof window === 'undefined') {
+      this.isViewportPortrait = false;
+      return;
+    }
+
+    this.isViewportPortrait = window.matchMedia?.('(orientation: portrait)').matches
+      ?? window.innerHeight >= window.innerWidth;
+  }
+
+  private clearRotateHintTimer(): void {
+    if (!this.rotateHintTimer) {
+      return;
+    }
+
+    clearTimeout(this.rotateHintTimer);
+    this.rotateHintTimer = null;
+  }
+
+  private readonly handleViewportOrientationChange = (): void => {
+    this.updateViewportOrientationState();
+
+    if (this.orientationMode === 'landscape' && !this.isViewportPortrait) {
+      this.showRotateHint = false;
+      this.clearRotateHintTimer();
+    }
+  };
 
   private shouldIgnoreRemoteKey(event: KeyboardEvent): boolean {
     if (event.altKey || event.ctrlKey || event.metaKey) {

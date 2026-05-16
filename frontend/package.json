@@ -17,7 +17,8 @@
     "ios": "npm run build:relative && cap sync ios && cap open ios",
     "electron": "npm run electron:serve",
     "electron:serve": "npm run build:relative && electron .",
-    "electron:build": "npm run build:relative && electron-builder"
+    "electron:build": "npm run build:relative && electron-builder",
+    "assets:android": "capacitor-assets generate --android --assetPath assets --iconBackgroundColor \"#071012\" --splashBackgroundColor \"#000000\" --splashBackgroundColorDark \"#000000\""
   },
   "dependencies": {
     "@angular/animations": "^18.2.13",
@@ -34,6 +35,7 @@
     "@capacitor/core": "^6.2.0",
     "@capacitor/haptics": "^6.0.1",
     "@capacitor/keyboard": "^6.0.2",
+    "@capacitor/screen-orientation": "^6.0.2",
     "@capacitor/status-bar": "^6.0.1",
     "@ionic/angular": "^8.4.3",
     "ionicons": "^7.4.0",
@@ -46,6 +48,7 @@
     "@angular-devkit/build-angular": "^18.2.13",
     "@angular/cli": "^18.2.13",
     "@angular/compiler-cli": "^18.2.13",
+    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^6.2.0",
     "@types/jasmine": "~5.1.4",
     "@types/node": "^22.10.2",
@@ -67,12 +70,14 @@
     },
     "files": [
       "dist/openstream/**/*",
+      "build/**/*",
       "main.js",
       "electron/preload.js",
       "package.json"
     ],
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "build/icon.ico"
     }
   }
 }

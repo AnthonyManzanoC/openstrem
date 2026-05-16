@@ -10,6 +10,7 @@ function createWindow() {
     minWidth: 960,
     minHeight: 640,
     backgroundColor: '#090909',
+    icon: path.join(__dirname, '..', 'build', 'icon.png'),
     title: 'OpenStream IPTV',
     webPreferences: {
       contextIsolation: true,
@@ -41,4 +42,3 @@ app.on('window-all-closed', () => {
     app.quit();
   }
 });
-
