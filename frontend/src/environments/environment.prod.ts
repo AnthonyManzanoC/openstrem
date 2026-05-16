@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://openstrem.onrender.com/api' // ¡Tu nueva API en la nube!
+  apiUrl: 'https://openstrem-qx53.onrender.com/api' 
 };
